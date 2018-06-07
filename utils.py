@@ -1,4 +1,4 @@
-import os, gzip, torch
+import os, gzip, torch, json
 import torch.nn as nn
 import numpy as np
 import scipy.misc
@@ -129,6 +129,36 @@ def loss_plot(hist, path = 'Train_hist.png', model_name = ''):
 
     plt.close()
 
+def rfloss_plot(hist, path = 'Train_hist.png', model_name = ''):
+    x = range(len(hist['Real_loss']))
+
+    y1 = hist['Real_loss']
+    y2 = hist['Fake_loss']
+
+    plt.plot(x, y1, label='Real_loss')
+    plt.plot(x, y2, label='Fake_loss')
+
+    plt.xlabel('Iter')
+    plt.ylabel('Loss')
+
+    plt.legend(loc=4)
+    plt.grid(True)
+    plt.tight_layout()
+
+    path = os.path.join(path, model_name + '_rfloss.png')
+
+    plt.savefig(path)
+
+    plt.close()    
+    
+def loss_save(hist, path = 'Train_hist.png', model_name = ''):
+    with open(path + '_loss', 'w') as fp:
+        json.dump(hist, fp)
+        
+def rfloss_save(hist, path = 'Train_hist.png', model_name = ''):
+    with open(path + '_rfloss', 'w') as fp:
+        json.dump(hist, fp)
+        
 def initialize_weights(net):
     for m in net.modules():
         if isinstance(m, nn.Conv2d):

@@ -146,6 +146,12 @@ class GAN(object):
         self.train_hist['per_epoch_time'] = []
         self.train_hist['total_time'] = []
 
+        self.rfloss_hist = {}
+        self.rfloss_hist['Real_loss'] = []
+        self.rfloss_hist['Fake_loss'] = []
+        self.rfloss_hist['per_epoch_time'] = []
+        self.rfloss_hist['total_time'] = []
+        
         if self.gpu_mode:
             self.y_real_, self.y_fake_ = Variable(torch.ones(self.batch_size, 1).cuda()), Variable(torch.zeros(self.batch_size, 1).cuda())
         else:
@@ -180,6 +186,8 @@ class GAN(object):
 
                 D_loss = D_real_loss + D_fake_loss
                 self.train_hist['D_loss'].append(D_loss.data[0])
+                self.rfloss_hist['Real_loss'].append(D_real_loss.data[0])
+                self.rfloss_hist['Fake_loss'].append(D_fake_loss.data[0])
 
                 D_loss.backward()
                 self.D_optimizer.step()
@@ -200,17 +208,22 @@ class GAN(object):
                           ((epoch + 1), (iter + 1), self.data_loader.dataset.__len__() // self.batch_size, D_loss.data[0], G_loss.data[0]))
 
             self.train_hist['per_epoch_time'].append(time.time() - epoch_start_time)
+            self.rfloss_hist['per_epoch_time'].append(time.time() - epoch_start_time)
+
             self.visualize_results((epoch+1))
 
         self.train_hist['total_time'].append(time.time() - start_time)
+        self.rfloss_hist['total_time'].append(time.time() - start_time)
+            
         print("Avg one epoch time: %.2f, total %d epochs time: %.2f" % (np.mean(self.train_hist['per_epoch_time']),
               self.epoch, self.train_hist['total_time'][0]))
         print("Training finish!... save training results")
 
         self.save()
-        utils.generate_animation(self.result_dir + '/' + self.dataset + '/' + self.model_name + '/' + self.model_name,
+        utils.generate_animation(self.result_dir + '/' + self.model_name,
                                  self.epoch)
-        utils.loss_plot(self.train_hist, os.path.join(self.save_dir, self.dataset, self.model_name), self.model_name)
+        utils.loss_plot(self.train_hist, os.path.join(self.save_dir), self.model_name)
+        utils.rfloss_plot(self.rfloss_hist, os.path.join(self.save_dir), self.model_name)
 
     def visualize_results(self, epoch, fix=True):
         self.G.eval()
@@ -239,10 +252,10 @@ class GAN(object):
             samples = samples.data.numpy().transpose(0, 2, 3, 1)
 
         utils.save_images(samples[:image_frame_dim * image_frame_dim, :, :, :], [image_frame_dim, image_frame_dim],
-                          self.result_dir + '/' + self.dataset + '/' + self.model_name + '/' + self.model_name + '_epoch%03d' % epoch + '.png')
+                          self.result_dir + '/' + self.model_name + '_epoch%03d' % epoch + '.png')
 
     def save(self):
-        save_dir = os.path.join(self.save_dir, self.dataset, self.model_name)
+        save_dir = self.save_dir
 
         if not os.path.exists(save_dir):
             os.makedirs(save_dir)
@@ -250,8 +263,10 @@ class GAN(object):
         torch.save(self.G.state_dict(), os.path.join(save_dir, self.model_name + '_G.pkl'))
         torch.save(self.D.state_dict(), os.path.join(save_dir, self.model_name + '_D.pkl'))
 
-        with open(os.path.join(save_dir, self.model_name + '_history.pkl'), 'wb') as f:
+        with open(os.path.join(save_dir, self.model_name + '_loss_history.pkl'), 'wb') as f:
             pickle.dump(self.train_hist, f)
+        with open(os.path.join(save_dir, self.model_name + '_rfloss_history.pkl'), 'wb') as f:
+            pickle.dump(self.train_hist, f) 
 
     def load(self):
         save_dir = os.path.join(self.save_dir, self.dataset, self.model_name)

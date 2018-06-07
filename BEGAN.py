@@ -195,8 +195,8 @@ class BEGAN(object):
 
                 D_loss = D_real_err - self.k * D_fake_err
                 self.train_hist['D_loss'].append(D_loss.data[0])
-                self.rfloss_hist['Real_loss'].append(D_real_loss.data[0])
-                self.rfloss_hist['Fake_loss'].append(D_fake_loss.data[0])
+                self.rfloss_hist['Real_loss'].append(D_real_err.data[0])
+                self.rfloss_hist['Fake_loss'].append(D_fake_err.data[0])
 
                 D_loss.backward()
                 self.D_optimizer.step()
@@ -240,10 +240,11 @@ class BEGAN(object):
         print("Training finish!... save training results")
 
         self.save()
-        utils.generate_animation(self.result_dir + '/' + self.dataset + '/' + self.model_name + '/' + self.model_name,
+        utils.generate_animation(self.result_dir + '/' + self.model_name,
                                  self.epoch)
-        utils.loss_plot(self.train_hist, os.path.join(self.save_dir, self.dataset, self.model_name), self.model_name)
-        utils.loss_plot(self.rfloss_hist, os.path.join(self.result_dir, self.dataset, self.model_name), self.model_name)
+        utils.loss_plot(self.train_hist, os.path.join(self.save_dir), self.model_name)
+        utils.rfloss_plot(self.rfloss_hist, os.path.join(self.save_dir), self.model_name)
+
     def visualize_results(self, epoch, fix=True):
         self.G.eval()
 
@@ -271,10 +272,10 @@ class BEGAN(object):
             samples = samples.data.numpy().transpose(0, 2, 3, 1)
 
         utils.save_images(samples[:image_frame_dim * image_frame_dim, :, :, :], [image_frame_dim, image_frame_dim],
-                          self.result_dir + '/' + self.dataset + '/' + self.model_name + '/' + self.model_name + '_epoch%03d' % epoch + '.png')
+                          self.result_dir + '/' + self.model_name + '_epoch%03d' % epoch + '.png')
 
     def save(self):
-        save_dir = os.path.join(self.save_dir, self.dataset, self.model_name)
+        save_dir = self.save_dir
 
         if not os.path.exists(save_dir):
             os.makedirs(save_dir)
@@ -282,8 +283,10 @@ class BEGAN(object):
         torch.save(self.G.state_dict(), os.path.join(save_dir, self.model_name + '_G.pkl'))
         torch.save(self.D.state_dict(), os.path.join(save_dir, self.model_name + '_D.pkl'))
 
-        with open(os.path.join(save_dir, self.model_name + '_history.pkl'), 'wb') as f:
+        with open(os.path.join(save_dir, self.model_name + '_loss_history.pkl'), 'wb') as f:
             pickle.dump(self.train_hist, f)
+        with open(os.path.join(save_dir, self.model_name + '_rfloss_history.pkl'), 'wb') as f:
+            pickle.dump(self.train_hist, f) 
 
     def load(self):
         save_dir = os.path.join(self.save_dir, self.dataset, self.model_name)
