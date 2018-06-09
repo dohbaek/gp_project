@@ -115,7 +115,7 @@ class GAN(object):
         utils.print_network(self.G)
         utils.print_network(self.D)
         print('-----------------------------------------------')
-
+        /*
         # load dataset
         if self.dataset == 'mnist':
             self.data_loader = DataLoader(datasets.MNIST('data/mnist', train=True, download=True,
@@ -131,6 +131,7 @@ class GAN(object):
             self.data_loader = utils.load_celebA('data/celebA', transform=transforms.Compose(
                 [transforms.CenterCrop(160), transforms.Scale(64), transforms.ToTensor()]), batch_size=self.batch_size,
                                                  shuffle=True)
+            */
         self.z_dim = 62
 
         # fixed noise
